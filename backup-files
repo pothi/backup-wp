@@ -174,10 +174,9 @@ if test 1 -eq "$(date +%e)"
 end
 
 # Auto delete backups
-find -L $BACKUP_PATH -type f -mtime +$NightlyBackupsToKeep -exec rm {} \;
-find -L $DIR_WEEKLY  -type f -mtime +$(math $WeeklyBackupsToKeep x 7)   -exec rm {} \;
-find -L $DIR_MONTHLY -type f -mtime +$(math $MonthlyBackupsToKeep x 31) -exec rm {} \;
-
+find -L $BACKUP_PATH/$DOMAIN_FULL_PATH-files-* -type f -mtime +$NightlyBackupsToKeep -exec rm {} \;
+find -L $DIR_WEEKLY/$DOMAIN_FULL_PATH-files-*  -type f -mtime +$(math $WeeklyBackupsToKeep x 7)   -exec rm {} \;
+find -L $DIR_MONTHLY/$DOMAIN_FULL_PATH-files-* -type f -mtime +$(math $MonthlyBackupsToKeep x 31) -exec rm {} \;
 
 echo "Database backup is done; please check the latest backup in '$BACKUP_PATH'."
 echo "Latest backup is at $BACKUP_NAME"
