@@ -1,16 +1,13 @@
 #!/usr/bin/env fish
 
-# set -l fish_trace on
+# set -l fish_trace non_empty_value
 
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 2.0
+set ver 3.0
 
 ### Variables - Please do not add trailing slash in the PATHs
-
-# where to store the database backups?
-set BACKUP_PATH {$HOME}/backups/files-except-uploads
 
 # a passphrase for encryption, in order to being able to use almost any special characters use ""
 # it's best to configure it in ~/.envrc file
@@ -20,39 +17,33 @@ set PASSPHRASE
 # if you have a different pattern, such as ~/app/example.com, please change the following to fit the server environment!
 set SITES_PATH {$HOME}/sites
 
-# To debug, use any value for "debug", otherwise please leave it empty
-set debug
+# it could be public_html on some installations.
+set PUBLIC_DIR public
 
 #-------- Do NOT Edit Below This Line --------#
+set backup_type files
 
 set ext tar.gz
-set prefix -files
+set prefix -$backup_type
 
-# attempt to create log directory if it doesn't exist
-if test ! -d {$HOME}/log
-    mkdir -p ~/log
-    if not test $status -ne 0
-        echo "Log directory not found at ~/log. This script can't create it, either!"
-        echo 'You may create it manually and re-run this script.'
-        exit 1
-    end
-end
-
-set log_file {$HOME}/log/backups.log
-# exec > >(tee -a "${log_file}")
-# exec 2> >(tee -a "${log_file}" >&2)
+set BACKUP_PATH $HOME/backups/$backup_type
 
 # Variables defined later in the script
 set script_name (status basename)
+set fulldate (date +%F)
 set timestamp (date +%F_%H-%M-%S)
-set success_alert 
-set custom_email 
-set custom_wp_path 
-set BUCKET_NAME 
-set DOMAIN 
+set success_alert
+set custom_email
+set custom_wp_path
+set BUCKET_NAME
+set DOMAIN
 set PUBLIC_DIR public
-set size
 set sizeH
+set dirs_to_exclude
+
+set unique_backup
+set backup_symlink
+set backup_by_date
 
 # get environment variables, if exists
 # .envrc is in the following format
@@ -72,9 +63,8 @@ set NightlyBackupsToKeep 7
 set WeeklyBackupsToKeep 4
 set MonthlyBackupsToKeep 12
 
-echo Domain: $DOMAIN
+# echo Domain: $DOMAIN
 
-set SITE $DOMAIN
 set DIR_NIGHTLY $BACKUP_PATH/nightly
 set DIR_WEEKLY $BACKUP_PATH/weekly
 set DIR_MONTHLY $BACKUP_PATH/monthly
@@ -102,16 +92,17 @@ set alertEmail "root@localhost"
 
 # Define paths
 
-set BACKUP_NAME $BACKUP_PATH/$DOMAIN$prefix-$timestamp.$ext
-set LATEST_BACKUP $BACKUP_PATH/$DOMAIN$prefix-latest.$ext
+set unique_backup $BACKUP_PATH/$DOMAIN$prefix-$timestamp.$ext
+set backup_symlink $BACKUP_PATH/$DOMAIN$prefix-latest.$ext
+set backup_by_date $DOMAIN$prefix-$fulldate.$ext
 
 set WP_PATH $SITES_PATH/$DOMAIN/$PUBLIC_DIR
 # [ -d "$WP_PATH" ] || { echo >&2 "WordPress is not found at ${WP_PATH}"; exit 1; }
 
 echo; echo Script to take a backup of files excluding uploads folder!; echo
-echo "'$script_name' started on... $(date +%c)"
+echo "$script_name started on... $(date +%c)"
 
-echo WordPress PATH: $WP_PATH
+# echo WordPress PATH: $WP_PATH
 
 ##############################    Files backup specific code       ###########################
 
@@ -119,14 +110,13 @@ echo WordPress PATH: $WP_PATH
 # no trailing slash, please
 set exclude_base_path $DOMAIN/$PUBLIC_DIR
 
-set dirs_to_exclude --exclude=$exclude_base_path/wp-content/uploads
+set -a dirs_to_exclude --exclude=$exclude_base_path/wp-content/uploads
 set -a dirs_to_exclude --exclude='*.log'
 set -a dirs_to_exclude --exclude='*.gz'
 set -a dirs_to_exclude --exclude='*.zip'
 set -a dirs_to_exclude --exclude=$exclude_base_path/.git
 set -a dirs_to_exclude --exclude=$exclude_base_path/wp-content/cache
 set -a dirs_to_exclude --exclude=$exclude_base_path/wp-content/wflogs
-set -a dirs_to_exclude --exclude=$exclude_base_path/wp-content/uploads_1
 set -a dirs_to_exclude --exclude='*.sql'
 # need more? - just use the above format
 
@@ -137,22 +127,31 @@ set -a dirs_to_exclude --exclude='*.sql'
 # exit
 
 # set -l fish_trace on
-tar hczf $BACKUP_NAME $dirs_to_exclude -C $SITES_PATH $DOMAIN
+tar hczf $unique_backup $dirs_to_exclude -C $SITES_PATH $DOMAIN
 # set fish_trace off
+if test $status -eq 0
+    echo Local backup is successful.
+else
+    set msg "$script_name - [Error] Something went wrong while taking local backup!"
+    printf "\n%s\n\n" "$msg"
+    echo "$msg" | mail -s 'Backup Failure' "$alertEmail"
+    [ -f "$unique_backup" ] && rm -f "$unique_backup"
+    exit 1
+end
+
 
 ############################## end of files backup specific code #############################
 
-set size $(du $BACKUP_NAME | awk '{print $1}')
-set sizeH $(du -h $BACKUP_NAME | awk '{print $1}')
+set sizeH $(du -h $unique_backup | awk '{print $1}')
 
-[ -L "$LATEST_BACKUP" ] && rm "$LATEST_BACKUP"
-ln -s "$BACKUP_NAME" "$LATEST_BACKUP"
+[ -L "$backup_symlink" ] && rm "$backup_symlink"
+ln -s "$unique_backup" "$backup_symlink"
 
 # send the backup offsite
 if [ "$BUCKET_NAME" ];
-    aws s3 cp $BACKUP_NAME s3://$BUCKET_NAME/$DOMAIN/files-except-uploads/ --only-show-errors
+    aws s3 cp $unique_backup s3://$BUCKET_NAME/$DOMAIN/$backup_type/$backup_by_date --only-show-errors
     if test $status -eq 0
-        set msg "Offsite backup successful."
+        set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
         [ "$success_alert" ] && echo "$script_name - $msg" | mail -s 'Offsite Backup Info' "$alertEmail"
     else
@@ -164,21 +163,21 @@ end
 
 # Weekly backup - Mondays
 if test 1 -eq "$(date +%u)"
-    cp $BACKUP_NAME $DIR_WEEKLY/
+    cp $unique_backup $DIR_WEEKLY/$backup_by_date
 end
 
 # Monthly backup - 1st of each month
 if test 1 -eq "$(date +%e)"
-    cp $BACKUP_NAME $DIR_MONTHLY/
+    cp $unique_backup $DIR_MONTHLY/$backup_by_date
 end
 
 # Auto delete backups
-find -L $BACKUP_PATH/$DOMAIN$prefix-* -type f -mtime +$NightlyBackupsToKeep -exec rm {} \;
-find -L $DIR_WEEKLY/$DOMAIN$prefix-*  -type f -mtime +$(math $WeeklyBackupsToKeep x 7)   -exec rm {} \;
-find -L $DIR_MONTHLY/$DOMAIN$prefix-* -type f -mtime +$(math $MonthlyBackupsToKeep x 31) -exec rm {} \;
+find -L $BACKUP_PATH/ -type f -iname "$DOMAIN$prefix-*" -mtime +$NightlyBackupsToKeep               -exec rm {} \;
+find -L $DIR_WEEKLY/  -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
+find -L $DIR_MONTHLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
 
-echo "Database backup is done; please check the latest backup in '$BACKUP_PATH'."
-echo "Latest backup is at $BACKUP_NAME"
-echo "Backup size: $size($sizeH)."
+echo Backup Folder: $BACKUP_PATH
+echo Latest backup: $unique_backup
+echo "Backup size:   $sizeH"
 
-echo Script ended on... "$(date +%c)"
+echo "$script_name ended on... $(date +%c)"
