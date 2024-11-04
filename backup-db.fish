@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 4.0
+set ver 5.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -26,14 +26,14 @@ set backup_type db
 set ext sql.gz
 set prefix -$backup_type
 
-set BACKUP_PATH $HOME/backups/$backup_type
+set backups_folder $HOME/backups/$backup_type
 
+# Variables defined later in the script
 set script_name (status basename)
 set fulldate (date +%F)
 set timestamp (date +%F_%H-%M-%S)
-set success_alert        
-set BUCKET_NAME 
-set DOMAIN 
+set BUCKET_NAME
+set DOMAIN
 set sizeH
 
 set unique_backup
@@ -47,17 +47,15 @@ set MonthlyBackupsToKeep 12
 
 # echo Domain: $DOMAIN
 
-set DIR_NIGHTLY $BACKUP_PATH/nightly
-set DIR_WEEKLY $BACKUP_PATH/weekly
-set DIR_MONTHLY $BACKUP_PATH/monthly
+set DIR_NIGHTLY $backups_folder/nightly
+set DIR_WEEKLY $backups_folder/weekly
+set DIR_MONTHLY $backups_folder/monthly
 
-# set alertEmail ${custom_email:-${BACKUP_ADMIN_EMAIL:-${ADMIN_EMAIL:-"root@localhost"}}}
-set alertEmail "root@localhost"
-
+set alertEmails
 set wp_root
 
 function backup-db -d 'Create a DB dump and optionally store it offsite.'
-    argparse --name=backup-db 'h/help' 'b/bucket=' -- $argv
+    argparse --name=backup-db 'h/help' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' -- $argv
     or return
 
     if set -q _flag_help
@@ -66,12 +64,20 @@ function backup-db -d 'Create a DB dump and optionally store it offsite.'
     end
 
     if not set -q argv[1]
-        # echo Use -h or --help to see the available options.
+        # if no arguments given (min requirement is example.com)
         __backup_db_print_help
         return 1
     end
 
     set DOMAIN $argv[1]
+
+    if set -q _flag_email
+        set alertEmails $_flag_email
+    end
+
+    if set -q _flag_success
+        set success_alert yes
+    end
 
     # actual script begins here
     begin
@@ -91,11 +97,11 @@ end # end of backup-db as a function
 function __backup_db_print_help
     printf '%s\n\n' "Take a database backup"
 
-    printf 'Usage: %s [-b <name>] [-k <days>] [-e <email-address>] [-s] [-p <WP path>] [-v] [-h] example.com\n\n' "$script_name"
+    printf 'Usage: %s [-b <bucket_name>] [-e <email-address>] [-s] [-p <WP path>] [-v] [-h] example.com\n\n' "$script_name"
 
     printf '\t%s\t%s\n' "-b, --bucket" "Name of the bucket for offsite backup (default: none)"
-    printf '\t%s\t%s\n' "-e, --email" "Email to send success/failures alerts (default: root@localhost)"
-    printf '\t%s\t%s\n' "-s, --success" "Alert on successful backup too (default: alert only on failures)"
+    printf '\t%s\t%s\n' "-e, --email" "Email/s to send success/failure alerts in addition to root"
+    printf '\t%s\t%s\n' "-s, --success" "Alert on successful (offsite) backup (default: alert on failures)"
     printf '\t%s\t%s\n' "-p, --path" "Path to WP files (default: ~/sites/example.com/public)"
     printf '\t%s\t%s\n' "-v, --version" "Prints the version info"
     printf '\t%s\t%s\n' "-h, --help" "Prints help"
@@ -109,8 +115,6 @@ function __backup_db_bootstrap
     test -d "$DIR_WEEKLY" || mkdir -p "$DIR_WEEKLY"
     test -d "$DIR_MONTHLY" || mkdir -p "$DIR_MONTHLY"
 
-    set BACKUP_PATH $DIR_NIGHTLY
-
     # Define paths
 
     set unique_backup $DIR_NIGHTLY/$DOMAIN$prefix-$timestamp.$ext
@@ -123,8 +127,8 @@ function __backup_db_bootstrap
     ### Some standard checks ###
     # check for backup dir
     if test ! -d "$DIR_NIGHTLY"
-        echo "DIR_NIGHTLY is not found at $DIR_NIGHTLY This script can't create it, either!"
-        echo You may create it manually and re-run this script.
+        echo >&2 "DIR_NIGHTLY is not found at $DIR_NIGHTLY This script can't create it, either!"
+        echo >&2 You may create it manually and re-run this script.
         exit 1
     end
 
@@ -153,7 +157,7 @@ function __backup_db_local
     else
         set msg "$script_name - [Error] Something went wrong while taking local backup!"
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'Backup Failure' "$alertEmail"
+        echo "$msg" | mail -s 'Backup Failure' --append=Bcc:"$alertEmails" root@localhost
         [ -f "$unique_backup" ] && rm -f "$unique_backup"
         exit 1
     end
@@ -170,11 +174,13 @@ function __backup_db_offsite -a BUCKET_NAME
     if test $status -eq 0
         set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
-        [ "$success_alert" ] && echo "$script_name - $msg" | mail -s 'Offsite Backup Info' "$alertEmail"
+        if set -q success_alert
+            echo "$script_name - $msg" | mail -s 'Offsite Backup Info' --append=Bcc:"$alertEmails" root@localhost
+        end
     else
         set msg "$script_name - [Error] Something went wrong while taking offsite backup."
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'Offsite Backup Info' "$alertEmail"
+        echo "$msg" | mail -s 'Offsite Backup Info' --append=Bcc:"$alertEmails" root@localhost
     end
 end
 
@@ -196,7 +202,6 @@ function __backup_db_cleanup
     find -L $DIR_WEEKLY/  -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
     find -L $DIR_MONTHLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
 
-
     # Display some info about the backup.
     echo Backup Folder: $DIR_NIGHTLY
     echo Latest backup: $unique_backup
@@ -206,3 +211,4 @@ function __backup_db_cleanup
     echo # end of output
 end
 
+backup-db $argv

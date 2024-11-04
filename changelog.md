@@ -1,3 +1,11 @@
+version: 5.0
+    - date: 2024.11.04
+    - improve naming scheme
+    - email alerts (upon failures)
+    - improve docs.
+    - same script to take full and partial files backup.
+    - remove backup-full.fish, as it is incorporated in backup-files.fish
+
 version: 4.0
     - date: 2024.10.08
     - switch to a standard fish function
