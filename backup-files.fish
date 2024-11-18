@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.0
+set ver 5.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -21,6 +21,9 @@ set SITES_PATH {$HOME}/sites
 set PUBLIC_DIR public
 
 #-------- Do NOT Edit Below This Line --------#
+
+#TODO: create ~/log and ~/backups if they don't exist
+
 set backup_type files
 
 set ext tar.gz
@@ -65,8 +68,10 @@ set DIR_MONTHLY $backups_folder/monthly
 set alertEmails
 set wp_root
 
+set db_dump
+
 function backup-files -d 'Backup all files and optionally store it offsite.'
-    argparse --name=backup-files 'h/help' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' -- $argv
+    argparse --name=backup-files 'h/help' 'b/bucket=' 'd/database' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' -- $argv
     or return
 
     if set -q _flag_help
@@ -98,6 +103,10 @@ function backup-files -d 'Backup all files and optionally store it offsite.'
             set -a excluded_items --exclude=$DOMAIN/$PUBLIC_DIR/wp-content/uploads
         end
 
+        if set -q _flag_database
+            __backup_tmp_db_dump
+        end
+
         __backup_files_local
 
 
@@ -109,7 +118,7 @@ function backup-files -d 'Backup all files and optionally store it offsite.'
         __backup_files_cleanup
     end 2>&1 | tee -a ~/log/backup-$backup_type.log
 
-end # end of backup-db as a function
+end # end of backup-files as a function
 
 function __backup_files_print_help
     printf '%s\n\n' "Take a backup of files"
@@ -117,6 +126,7 @@ function __backup_files_print_help
     printf 'Usage: %s [-b <bucket_name>] [-e <email-address>] [-s] [-p <WP path>] [-v] [-h] example.com\n\n' "$script_name"
 
     printf '\t%s\t%s\n' "-b, --bucket" "Name of the bucket for offsite backup (default: none)"
+    printf '\t%s\t%s\n' "-d, --database" "Include DB dump along with files backup"
     printf '\t%s\t%s\n' "-e, --email" "Email/s to send success/failure alerts in addition to root"
     printf '\t%s\t%s\n' "-s, --success" "Alert on successful (offsite) backup (default: alert on failures)"
     printf '\t%s\t%s\n' "-p, --path" "Path to WP files (default: ~/sites/example.com/public)"
@@ -144,6 +154,7 @@ function __backup_files_bootstrap
     set backup_by_date $DOMAIN$prefix-$fulldate.$ext
 
     set wp_root $SITES_PATH/$DOMAIN/$PUBLIC_DIR
+    set db_dump $SITES_PATH/$DOMAIN/db
     # [ -d "$wp_root" ] || { echo >&2 "WordPress is not found at ${wp_root}"; exit 1; }
 
     ### Some standard checks ###
@@ -178,6 +189,17 @@ function __backup_files_bootstrap
 
     # exit
 
+end
+
+function __backup_tmp_db_dump
+    if ! wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table "$db_dump" >/dev/null
+        set msg "$script_name - [Error] Something went wrong while taking DB dump!"
+        printf "\n%s\n\n" "$msg"
+        echo "$msg" | mail -s 'DB Dump Failure' --append=Bcc:"$alertEmails" root@localhost
+        # remove the empty backup file
+        [ -f "$db_dump" ] && rm "$db_dump"
+        exit 1
+    end
 end
 
 function __backup_files_local
@@ -222,6 +244,9 @@ function __backup_files_offsite -a BUCKET_NAME
 end
 
 function __backup_files_cleanup
+    # remove the empty backup file, if exists
+    [ -f "$db_dump" ] && rm "$db_dump"
+
     if not set -q _flag_only_offsite
         # Weekly backup - Mondays
         if test 1 -eq "$(date +%u)"

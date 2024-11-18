@@ -1,3 +1,7 @@
+version: 5.1
+    - date: 2024.11.18
+    - option to include DBdump while taking files backup
+
 version: 5.0
     - date: 2024.11.04
     - improve naming scheme
