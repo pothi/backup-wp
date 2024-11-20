@@ -1,3 +1,7 @@
+version: 5.2
+    - date: 2024.11.20
+    - include PATH
+
 version: 5.1
     - date: 2024.11.18
     - option to include DBdump while taking files backup

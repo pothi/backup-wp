@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.0
+set ver 5.2
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -21,6 +21,11 @@ set SITES_PATH {$HOME}/sites
 set PUBLIC_DIR public
 
 #-------- Do NOT Edit Below This Line --------#
+
+#TODO: create ~/log and ~/backups if they don't exist
+
+set PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+
 set backup_type db
 
 set ext sql.gz

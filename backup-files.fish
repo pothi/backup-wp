@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.1
+set ver 5.2
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -23,6 +23,8 @@ set PUBLIC_DIR public
 #-------- Do NOT Edit Below This Line --------#
 
 #TODO: create ~/log and ~/backups if they don't exist
+
+set PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
 set backup_type files
 
