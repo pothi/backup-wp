@@ -1,3 +1,7 @@
+version: 5.2.1
+    - date: 2024.11.26
+    - better error messages
+
 version: 5.2
     - date: 2024.11.20
     - include PATH

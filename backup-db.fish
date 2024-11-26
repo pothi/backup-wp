@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.2
+set ver 5.2.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -137,8 +137,8 @@ function __backup_db_bootstrap
         exit 1
     end
 
-    command -v wp >/dev/null || { echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; }
-    command -v aws >/dev/null || { echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; }
+    command -v wp >/dev/null || begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
+    command -v aws >/dev/null || begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
     command -v mail >/dev/null || echo >&2 "[Warn]: 'mail' command is not found in \$PATH; Email alerts will not be sent!"
 
     ### Actual Script Starts here...
