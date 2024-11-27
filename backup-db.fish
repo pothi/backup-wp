@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.3.0
+set ver 5.3.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -134,11 +134,11 @@ function __backup_update
     mkdir -p ~/backups &>/dev/null
     cp $current_script ~/backups/$(status basename)-$ver
     set remote_script $(mktemp)
-    echo "Temp Remote Script: $remote_script"
+    # echo "Temp Remote Script: $remote_script"
     curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/backup-files.fish
     chmod +x $remote_script
     echo "Current Version: $ver"
-    echo "Remote Version: $(fish remote_script -v)"
+    echo "Remote Version: ($remote_script -v)"
     cp $remote_script $current_script
     rm $remote_script
     echo Done.

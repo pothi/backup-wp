@@ -1,3 +1,7 @@
+version: 5.3.1
+    - date: 2024.11.27
+    - bug fix for auto-update
+
 version: 5.3.0
     - date: 2024.11.27
     - include version and update flags.
