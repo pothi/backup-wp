@@ -1,3 +1,8 @@
+version: 5.3.0
+    - date: 2024.11.27
+    - include version and update flags.
+    - remove unused conflicting PATH variable
+
 version: 5.2.1
     - date: 2024.11.26
     - better error messages

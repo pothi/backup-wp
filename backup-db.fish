@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.2.1
+set ver 5.3.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -23,8 +23,6 @@ set PUBLIC_DIR public
 #-------- Do NOT Edit Below This Line --------#
 
 #TODO: create ~/log and ~/backups if they don't exist
-
-set PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
 set backup_type db
 
@@ -60,11 +58,21 @@ set alertEmails
 set wp_root
 
 function backup-db -d 'Create a DB dump and optionally store it offsite.'
-    argparse --name=backup-db 'h/help' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' -- $argv
+    argparse --name=backup-db 'h/help' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' 'v/version' 'u/update' -- $argv
     or return
 
     if set -q _flag_help
         __backup_db_print_help
+        return 0
+    end
+
+    if set -q _flag_version
+        __backup_print_version
+        return 0
+    end
+
+    if set -q _flag_update
+        __backup_update
         return 0
     end
 
@@ -109,9 +117,31 @@ function __backup_db_print_help
     printf '\t%s\t%s\n' "-s, --success" "Alert on successful (offsite) backup (default: alert on failures)"
     printf '\t%s\t%s\n' "-p, --path" "Path to WP files (default: ~/sites/example.com/public)"
     printf '\t%s\t%s\n' "-v, --version" "Prints the version info"
+    printf '\t%s\t%s\n' "-u, --update" "Update if a new version is available."
     printf '\t%s\t%s\n' "-h, --help" "Prints help"
 
     printf "\nFor more info, changelog and documentation... https://github.com/pothi/backup-wp\n"
+end
+
+function __backup_print_version
+    echo $ver
+end
+
+function __backup_update
+    # TODO: Skip update upon error or if there is no new version
+    echo "Updating this script..."
+    set current_script $(pwd)/$(status basename)
+    mkdir -p ~/backups &>/dev/null
+    cp $current_script ~/backups/$(status basename)-$ver
+    set remote_script $(mktemp)
+    echo "Temp Remote Script: $remote_script"
+    curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/backup-files.fish
+    chmod +x $remote_script
+    echo "Current Version: $ver"
+    echo "Remote Version: $(fish remote_script -v)"
+    cp $remote_script $current_script
+    rm $remote_script
+    echo Done.
 end
 
 function __backup_db_bootstrap
