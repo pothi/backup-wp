@@ -138,7 +138,7 @@ function __backup_update
     curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/backup-files.fish
     chmod +x $remote_script
     echo "Current Version: $ver"
-    echo "Remote Version: ($remote_script -v)"
+    echo "Remote Version: $($remote_script -v)"
     cp $remote_script $current_script
     rm $remote_script
     echo Done.

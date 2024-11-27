@@ -1,3 +1,7 @@
+version: 5.3.2
+    - date: 2024.11.27
+    - bug fix for auto-update
+
 version: 5.3.1
     - date: 2024.11.27
     - bug fix for auto-update
