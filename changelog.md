@@ -1,3 +1,8 @@
+version: 5.4.0
+    - date: 2025.03.06
+    - bug fix for offsite-only-backup.
+    - backward compatibility for fish version 3.3.1
+
 version: 5.3.2
     - date: 2024.11.27
     - bug fix for auto-update

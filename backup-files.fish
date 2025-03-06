@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.3.2
+set ver 5.4.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -70,6 +70,8 @@ set wp_root
 
 set db_dump
 
+set offsite_only
+
 function backup-files -d 'Backup all files and optionally store it offsite.'
     argparse --name=backup-files 'h/help' 'b/bucket=' 'd/database' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' 'v/version' 'u/update' -- $argv
     or return
@@ -99,6 +101,10 @@ function backup-files -d 'Backup all files and optionally store it offsite.'
 
     if set -q _flag_email
         set alertEmails $_flag_email
+    end
+
+    if set -q _flag_only_offsite
+        set offsite_only yes
     end
 
     if set -q _flag_success
@@ -159,15 +165,15 @@ end
 function __backup_update
     # TODO: Skip update upon error or if there is no new version
     echo "Updating this script..."
-    set current_script $(pwd)/$(status basename)
+    set current_script (pwd)/(status basename)
     mkdir -p ~/backups &>/dev/null
-    cp $current_script ~/backups/$(status basename)-$ver
-    set remote_script $(mktemp)
+    cp $current_script ~/backups/(status basename)-$ver
+    set remote_script (mktemp)
     # echo "Temp Remote Script: $remote_script"
     curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/backup-files.fish
     chmod +x $remote_script
     echo "Current Version: $ver"
-    echo "Remote Version: $($remote_script -v)"
+    echo "Remote Version: ($remote_script -v)"
     cp $remote_script $current_script
     rm $remote_script
     echo Done.
@@ -203,7 +209,7 @@ function __backup_files_bootstrap
 
     ### Actual Script Starts here...
     echo # Beginning of output
-    echo "$script_name started on... $(date +%c)"
+    echo "$script_name started on... "(date +%c)
 
     ##############################    Files backup specific code       ###########################
 
@@ -253,10 +259,12 @@ function __backup_files_local
         exit 1
     end
 
-    set sizeH $(du -h $unique_backup | awk '{print $1}')
+    set sizeH (du -h $unique_backup | awk '{print $1}')
 
-    [ -L "$backup_symlink" ] && rm "$backup_symlink"
-    ln -s "$unique_backup" "$backup_symlink"
+    if test -z $offsite_only
+        [ -L "$backup_symlink" ] && rm "$backup_symlink"
+        ln -s "$unique_backup" "$backup_symlink"
+    end
 end
 
 function __backup_files_offsite -a BUCKET_NAME
@@ -279,35 +287,35 @@ function __backup_files_cleanup
     # remove the empty backup file, if exists
     [ -f "$db_dump" ] && rm "$db_dump"
 
-    if not set -q _flag_only_offsite
+    if test -n "$offsite_only"
+        rm $unique_backup
+        echo Local backup removed.
+    else
         # Weekly backup - Mondays
-        if test 1 -eq "$(date +%u)"
+        if test 1 -eq (date +%u)
             cp $unique_backup $DIR_WEEKLY/$backup_by_date
             echo Weekly backup is taken.
         end
 
         # Monthly backup - 1st of each month
-        if test 1 -eq "$(date +%e)"
+        if test '01' = "(date +%d)"
             cp $unique_backup $DIR_MONTHLY/$backup_by_date
             echo Monthly backup is taken.
         end
 
         # Auto delete backups
         find -L $DIR_NIGHTLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +$NightlyBackupsToKeep               -exec rm {} \;
-        find -L $DIR_WEEKLY/  -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
-        find -L $DIR_MONTHLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
+        find -L $DIR_WEEKLY/  -type f -iname "$DOMAIN$prefix-*" -mtime +(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
+        find -L $DIR_MONTHLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
 
         # Display some info about the backup.
         echo Backup Folder: $DIR_NIGHTLY
         echo Latest backup: $unique_backup
-    else
-        rm $unique_backup
-        echo Local backup removed.
     end
 
     echo "Backup size:   $sizeH"
 
-    echo "$script_name ended on... $(date +%c)"
+    echo "$script_name ended on... "(date +%c)
     echo # end of output
 end
 
