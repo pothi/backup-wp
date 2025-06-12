@@ -1,3 +1,7 @@
+version: 5.4.1
+    - date: 2025.06.11
+    - create ~/log and ~/backup folders
+
 version: 5.4.0
     - date: 2025.03.06
     - bug fix for offsite-only-backup.

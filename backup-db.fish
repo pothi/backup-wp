@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.3.2
+set ver 5.4.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -22,7 +22,9 @@ set PUBLIC_DIR public
 
 #-------- Do NOT Edit Below This Line --------#
 
-#TODO: create ~/log and ~/backups if they don't exist
+# create necessary directories
+test -d ~/backups || mkdir -p ~/backups
+test -d ~/log || mkdir -p ~/log
 
 set backup_type db
 
