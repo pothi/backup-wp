@@ -1,21 +1,7 @@
-Backup-Wordpress
+Backup Wordpress
 ================
 
-This is rewritten version of Backup WordPress repo, in fish shell.
-
-There are a few assumptions, though.
-
-- The server doesn't have cPanel.
-- Each (server) user hosts just only one site.
-- The server may have multiple users (hosting one site per user).
-
-
-
-
-
-
-
-
+This is rewritten version of [Backup WordPress repo](https://github.com/pothi/backup-wordpress), in fish shell.
 
 ## Features
 
@@ -28,18 +14,11 @@ There are a few assumptions, though.
 - Support for simple encryption using GnuPG
 - Alert via email when the offsite backup fails (and succeeds)
 
-## Wishlist
-
-- take only local backups or only remote backups or both.
-- ability to remove local backups when taking only remote backups.
-- single script to take all sorts of backups.
-- close integration with wp-cli (probably as a plugin).
-- alert when local storage reaches a limit.
-
 ## Requirements in the server
 
-- wp-cli
-- aws-cli and/or gsutil (optional, to take offline backups)
+- [fish shell](https://fishshell.com/)
+- [wp-cli](https://wp-cli.org/)
+- [aws-cli](https://aws.amazon.com/cli/)
 - SSH access
 - mysqldump
 - tar
@@ -48,9 +27,8 @@ There are a few assumptions, though.
 
 ## What does each backup script do?
 
-- [db-backup.sh](https://github.com/pothi/backup-wp/blob/main/db-backup.sh) can take database backup with --add-drop-table option.
-- [files-no-uploads-backup.sh](https://github.com/pothi/backup-wp/blob/main/files-no-uploads-backup.sh) can take files backups without uploads folder to reduce the overall size of the backup. Ideal for nightly backups!
-- [full-backup.sh](https://github.com/pothi/backup-wp/blob/main/full-backup.sh) can take full backup including database (that is named db.sql and is available at the WordPress core directory). Ideal for a weekly routine!
+- [db-backup.fish](https://github.com/pothi/backup-wp/blob/main/backup-db.fish) can take database backup.
+- [full-backup.fish](https://github.com/pothi/backup-wp/blob/main/backup-db.fish) can take full backup including database (that is named **db** and is available at the WordPress core directory). Ideal for a weekly routine!
 
 ## Where are the backups stored?
 
@@ -59,29 +37,23 @@ There are a few assumptions, though.
 
 ## Usage
 
-- You may configure most things on the command line since version 6.0.0. For usage, just run the script without arguments.
-- If you use older version of the script (older than 6.0.00, firstly, go through each script and fill-in the variables to fit your particular environment. Currently, it is assumed that the WordPress core is available at `~/sites/example.com/public`.
+- You may configure most things on the command line since version 5.0.0. For usage, just run the script without arguments.
+- If you use older version of the script (older than 5.0.0, firstly, go through each script and fill-in the variables to fit your particular environment. Currently, it is assumed that the WordPress core is available at `~/sites/example.com/public`.
 - please adjust the number of days to keep the backup, depending on the remaining hard disk space in your server.
 - test the scripts using SSH before implementing it in system cron.
 - note: you may take backups of multiple domains like the following...
 
 ```
-/path/to/db-backup.sh example1.com
-/path/to/db-backup.sh example2.com
-/path/to/db-backup.sh example3.com
+/path/to/db-backup.fish example1.com
+/path/to/db-backup.fish example2.com
+/path/to/db-backup.fish example3.com
 ```
 
-For more usage options, please run `/path/to/db-backup.sh -h`.
+For more usage options, please run `/path/to/db-backup.fish -h`.
 
 The above is applicable to all the scripts!
 
 ## Contributors
-
-Thanks to the following people who have contributed to this repo...
-
-- [Nik](https://github.com/nik-lampe)
-- [Francesco](https://github.com/Cicciodev)
-- [Wischweh Mobile Consultancy](https://github.com/wischweh)
 
 ### How to decrypt, if I used a passphrase
 
@@ -97,6 +69,6 @@ Possibly, yes. My hourly rate is USD 50 per hour, though.
 
 ### Have questions or just wanted to say hi?
 
-Please ping me on [Twitter](https://twitter.com/pothi) or [send me a message](https://www.tinywp.in/contact/).
+Please ping me on [X(formerly Twitter)](https://x.com/pothi) or [send me a message](https://www.tinywp.in/contact/).
 
 Suggestions, bug reports, issues, forks are always welcome!

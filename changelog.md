@@ -1,3 +1,8 @@
+version: 5.4.2
+    - date: 2025.06.25
+    - better docs.
+    - bugfix on auto-update of backup-db.fish
+
 version: 5.4.1
     - date: 2025.06.11
     - create ~/log and ~/backup folders

@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.4.1
+set ver 5.4.2
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -167,16 +167,26 @@ end
 function __backup_update
     # TODO: Skip update upon error or if there is no new version
     echo "Updating this script..."
+
+    # take a backup of the current version
+    # the following line gives an error when the script is revoked from another dir
     set current_script (pwd)/(status basename)
     mkdir -p ~/backups &>/dev/null
     cp $current_script ~/backups/(status basename)-$ver
+
+    # get the remote version
     set remote_script (mktemp)
     # echo "Temp Remote Script: $remote_script"
-    curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/backup-files.fish
+    curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/(script_name)
     chmod +x $remote_script
+
+    # display the version info
     echo "Current Version: $ver"
-    echo "Remote Version: ($remote_script -v)"
+    echo "Remote Version: "($remote_script -v)
+
+    # final steps
     cp $remote_script $current_script
+
     rm $remote_script
     echo Done.
 end
