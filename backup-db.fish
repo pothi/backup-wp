@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.4.2
+set ver 5.5.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -178,6 +178,8 @@ function __backup_db_bootstrap
         echo >&2 You may create it manually and re-run this script.
         exit 1
     end
+
+    set -xp PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
     command -v wp >/dev/null || begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
     command -v aws >/dev/null || begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end

@@ -1,3 +1,8 @@
+version: 5.5.0
+    - date: 2025.07.21
+    - set PATH correctly
+    - backup-files.fish: take a backup of cron as well.
+
 version: 5.4.2
     - date: 2025.06.25
     - better docs.

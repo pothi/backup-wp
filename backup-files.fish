@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.4.2
+set ver 5.5.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -215,6 +215,8 @@ function __backup_files_bootstrap
         exit 1
     end
 
+    set -xp PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+
     command -v wp >/dev/null || begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
     command -v aws >/dev/null || begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
     command -v mail >/dev/null || echo >&2 "[Warn]: 'mail' command is not found in \$PATH; Email alerts will not be sent!"
@@ -253,6 +255,8 @@ function __backup_tmp_db_dump
 end
 
 function __backup_files_local
+    crontab -l > $SITES_PATH/$DOMAIN/cron-latest
+
     # take actual files backup
     # 2>/dev/null to suppress any warnings / errors
     if test -n "$PASSPHRASE"
