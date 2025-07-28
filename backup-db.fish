@@ -5,20 +5,20 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.5.0
+set ver 5.6.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
 # a passphrase for encryption, in order to being able to use almost any special characters use ""
 # it's best to configure it in ~/.envrc file
-set PASSPHRASE
+set passphrase
 
 # the script assumes your sites are stored like ~/sites/example.com, ~/sites/example.net, ~/sites/example.org and so on.
 # if you have a different pattern, such as ~/app/example.com, please change the following to fit the server environment!
-set SITES_PATH {$HOME}/sites
+set sites_path {$HOME}/sites
 
 # it could be public_html on some installations.
-set PUBLIC_DIR public
+set public_dir public
 
 #-------- Do NOT Edit Below This Line --------#
 
@@ -37,8 +37,8 @@ set backups_folder $HOME/backups/$backup_type
 set script_name (status basename)
 set fulldate (date +%F)
 set timestamp (date +%F_%H-%M-%S)
-set BUCKET_NAME
-set DOMAIN
+set bucket_name
+set domain
 set sizeH
 
 set unique_backup
@@ -50,11 +50,11 @@ set NightlyBackupsToKeep 7
 set WeeklyBackupsToKeep 4
 set MonthlyBackupsToKeep 12
 
-# echo Domain: $DOMAIN
+# echo Domain: $domain
 
-set DIR_NIGHTLY $backups_folder/nightly
-set DIR_WEEKLY $backups_folder/weekly
-set DIR_MONTHLY $backups_folder/monthly
+set dir_nightly $backups_folder/nightly
+set dir_weekly $backups_folder/weekly
+set dir_monthly $backups_folder/monthly
 
 set alertEmails
 set wp_root
@@ -84,7 +84,7 @@ function backup-db -d 'Create a DB dump and optionally store it offsite.'
         return 1
     end
 
-    set DOMAIN $argv[1]
+    set domain $argv[1]
 
     if set -q _flag_email
         set alertEmails $_flag_email
@@ -158,32 +158,32 @@ end
 
 function __backup_db_bootstrap
     test -d ~/tmp || mkdir -p ~/tmp
-    test -d "$DIR_NIGHTLY" || mkdir -p "$DIR_NIGHTLY"
-    test -d "$DIR_WEEKLY" || mkdir -p "$DIR_WEEKLY"
-    test -d "$DIR_MONTHLY" || mkdir -p "$DIR_MONTHLY"
+    test -d "$dir_nightly" || mkdir -p "$dir_nightly"
+    test -d "$dir_weekly" || mkdir -p "$dir_weekly"
+    test -d "$dir_monthly" || mkdir -p "$dir_monthly"
 
     # Define paths
 
-    set unique_backup $DIR_NIGHTLY/$DOMAIN$prefix-$timestamp.$ext
-    set backup_symlink $DIR_NIGHTLY/$DOMAIN$prefix-latest.$ext
-    set backup_by_date $DOMAIN$prefix-$fulldate.$ext
+    set unique_backup $dir_nightly/$domain$prefix-$timestamp.$ext
+    set backup_symlink $dir_nightly/$domain$prefix-latest.$ext
+    set backup_by_date $domain$prefix-$fulldate.$ext
 
-    set wp_root $SITES_PATH/$DOMAIN/$PUBLIC_DIR
+    set wp_root $sites_path/$domain/$public_dir
     # [ -d "$wp_root" ] || { echo >&2 "WordPress is not found at ${wp_root}"; exit 1; }
 
     ### Some standard checks ###
     # check for backup dir
-    if test ! -d "$DIR_NIGHTLY"
-        echo >&2 "DIR_NIGHTLY is not found at $DIR_NIGHTLY This script can't create it, either!"
+    if test ! -d "$dir_nightly"
+        echo >&2 "dir_nightly is not found at $dir_nightly This script can't create it, either!"
         echo >&2 You may create it manually and re-run this script.
         exit 1
     end
 
     set -xp PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
-    command -v wp >/dev/null || begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
-    command -v aws >/dev/null || begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
-    command -v mail >/dev/null || echo >&2 "[Warn]: 'mail' command is not found in \$PATH; Email alerts will not be sent!"
+    command --query wp   ; or begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
+    command --query aws  ; or begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
+    command --query mail ; or  echo >&2 "[Warn]: 'mail' command is not found in \$PATH; Email alerts will not be sent!"
 
     ### Actual Script Starts here...
     echo # Beginning of output
@@ -195,9 +195,9 @@ function __backup_db_local
     # take actual DB backup
     # 2>/dev/null to suppress any warnings / errors
     # wp --path="$wp_root" transient delete --all
-    if test -n "$PASSPHRASE"
+    if test -n "$passphrase"
         set unique_backup "$unique_backup".gpg
-        wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table - | gzip | gpg --symmetric --passphrase "$PASSPHRASE" --batch -o "$unique_backup"
+        wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table - | gzip | gpg --symmetric --passphrase "$passphrase" --batch -o "$unique_backup"
     else
         wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table - | gzip > "$unique_backup"
     end
@@ -217,9 +217,9 @@ function __backup_db_local
     ln -s "$unique_backup" "$backup_symlink"
 end
 
-function __backup_db_offsite -a BUCKET_NAME
+function __backup_db_offsite -a bucket_name
     # send the backup offsite
-    aws s3 cp $unique_backup s3://$BUCKET_NAME/$DOMAIN/$backup_type/$backup_by_date --only-show-errors
+    aws s3 cp $unique_backup s3://$bucket_name/$domain/$backup_type/$backup_by_date --only-show-errors
     if test $status -eq 0
         set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
@@ -236,23 +236,23 @@ end
 function __backup_db_cleanup
     # Weekly backup - Mondays
     if test 1 -eq "$(date +%u)"
-        cp $unique_backup $DIR_WEEKLY/$backup_by_date
+        cp $unique_backup $dir_weekly/$backup_by_date
         echo Weekly backup is taken.
     end
 
     # Monthly backup - 1st of each month
     if test 1 -eq "$(date +%e)"
-        cp $unique_backup $DIR_MONTHLY/$backup_by_date
+        cp $unique_backup $dir_monthly/$backup_by_date
         echo Monthly backup is taken.
     end
 
     # Auto delete backups
-    find -L $DIR_NIGHTLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +$NightlyBackupsToKeep               -exec rm {} \;
-    find -L $DIR_WEEKLY/  -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
-    find -L $DIR_MONTHLY/ -type f -iname "$DOMAIN$prefix-*" -mtime +$(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
+    find -L $dir_nightly/ -type f -iname "$domain$prefix-*" -mtime +$NightlyBackupsToKeep               -exec rm {} \;
+    find -L $dir_weekly/  -type f -iname "$domain$prefix-*" -mtime +$(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
+    find -L $dir_monthly/ -type f -iname "$domain$prefix-*" -mtime +$(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
 
     # Display some info about the backup.
-    echo Backup Folder: $DIR_NIGHTLY
+    echo Backup Folder: $dir_nightly
     echo Latest backup: $unique_backup
     echo "Backup size:   $sizeH"
 

@@ -1,3 +1,11 @@
+version: 5.6.0
+    - date: 2025.07.29
+    - change variable names to lowercase.
+
+version: 5.5.1
+    - date: 2025.07.24
+    - fix syntax for command `command` (previously bash syntax was used; not supported by fish)
+
 version: 5.5.0
     - date: 2025.07.21
     - set PATH correctly
