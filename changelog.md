@@ -1,3 +1,7 @@
+version: 5.6.1
+    - date: 2025.10.14
+    - fix the script name while updating the script.
+
 version: 5.6.0
     - date: 2025.07.29
     - change variable names to lowercase.

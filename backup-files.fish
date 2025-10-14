@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.6.0
+set ver 5.6.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -177,7 +177,7 @@ function __backup_update
     # get the remote version
     set remote_script (mktemp)
     # echo "Temp Remote Script: $remote_script"
-    curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/(script_name)
+    curl -sSL -o $remote_script https://github.com/pothi/backup-wp/raw/refs/heads/main/$script_name
     chmod +x $remote_script
 
     # display the version info
