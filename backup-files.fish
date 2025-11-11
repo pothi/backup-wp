@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.6.1
+set ver 5.7.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -247,7 +247,7 @@ function __backup_tmp_db_dump
     if ! wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table "$db_dump" >/dev/null
         set msg "$script_name - [Error] Something went wrong while taking DB dump!"
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'DB Dump Failure' --append=Bcc:"$alertEmails" root@localhost
+        echo "$msg" | mail -s 'DB Dump Failure' -b "$alertEmails" root@localhost
         # remove the empty backup file
         [ -f "$db_dump" ] && rm "$db_dump"
         exit 1
@@ -270,7 +270,7 @@ function __backup_files_local
     else
         set msg "$script_name - [Error] Something went wrong while taking local backup!"
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'Backup Failure' --append=Bcc:"$alertEmails" root@localhost
+        echo "$msg" | mail -s 'Backup Failure' -b "$alertEmails" root@localhost
         [ -f "$unique_backup" ] && rm -f "$unique_backup"
         exit 1
     end
@@ -290,12 +290,12 @@ function __backup_files_offsite -a bucket_name
         set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
         if set -q success_alert
-            echo "$script_name - $msg" | mail -s 'Offsite Backup Info' --append=Bcc:"$alertEmails" root@localhost
+            echo "$script_name - $msg" | mail -s 'Offsite Backup Info' -b "$alertEmails" root@localhost
         end
     else
         set msg "$script_name - [Error] Something went wrong while taking offsite backup."
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'Offsite Backup Info' --append=Bcc:"$alertEmails" root@localhost
+        echo "$msg" | mail -s 'Offsite Backup Info' -b "$alertEmails" root@localhost
     end
 end
 

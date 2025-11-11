@@ -1,3 +1,7 @@
+version: 5.7.0
+    - date: 2025.11.11
+    - fix issue with BCC email syntax
+
 version: 5.6.1
     - date: 2025.10.14
     - fix the script name while updating the script.
