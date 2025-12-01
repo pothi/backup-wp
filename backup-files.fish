@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.7.0
+set ver 5.7.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -314,7 +314,7 @@ function __backup_files_cleanup
         end
 
         # Monthly backup - 1st of each month
-        if test '01' = "(date +%d)"
+        if test 1 -eq "$(date +%e)"
             cp $unique_backup $dir_monthly/$backup_by_date
             echo Monthly backup is taken.
         end

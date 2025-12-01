@@ -1,3 +1,7 @@
+version: 5.7.1
+    - date: 2025.12.01
+    - fix issue with monthly backups
+
 version: 5.7.0
     - date: 2025.11.11
     - fix issue with BCC email syntax
