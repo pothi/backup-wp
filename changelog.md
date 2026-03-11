@@ -1,3 +1,7 @@
+version: 5.7.2
+    - date: 2026.03.11
+    - use 'type' in place of 'command'.
+
 version: 5.7.1
     - date: 2025.12.01
     - fix issue with monthly backups

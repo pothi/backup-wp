@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.7.0
+set ver 5.7.2
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -181,9 +181,9 @@ function __backup_db_bootstrap
 
     set -xp PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
-    command --query wp   ; or begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
-    command --query aws  ; or begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
-    command --query mail ; or  echo >&2 "[Warn]: 'mail' command is not found in \$PATH; Email alerts will not be sent!"
+    type --query wp ; or begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
+    command -q aws ; or begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
+    type -q mail ; or  echo >&2 "[Warn]: 'mail' command is not found in \$PATH; Email alerts will not be sent!"
 
     ### Actual Script Starts here...
     echo # Beginning of output
