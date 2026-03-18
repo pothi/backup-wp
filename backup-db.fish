@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.7.2
+set ver 5.7.3
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -58,6 +58,9 @@ set dir_monthly $backups_folder/monthly
 
 set alertEmails
 set wp_root
+
+set time_start
+set time_end
 
 function backup-db -d 'Create a DB dump and optionally store it offsite.'
     argparse --name=backup-db 'h/help' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' 'v/version' 'u/update' -- $argv
@@ -188,6 +191,7 @@ function __backup_db_bootstrap
     ### Actual Script Starts here...
     echo # Beginning of output
     echo "$script_name started on... $(date +%c)"
+    set time_start (date +%s)
 
 end
 
@@ -255,6 +259,12 @@ function __backup_db_cleanup
     echo Backup Folder: $dir_nightly
     echo Latest backup: $unique_backup
     echo "Backup size:   $sizeH"
+
+    set time_end (date +%s)
+    set runtime (math $time_end - $time_start)
+    set runtime_minutes (math -s0 $runtime / 60)
+    set runtime_seconds (math $runtime % 60)
+    echo Execution time: $runtime_minutes minutes $runtime_seconds seconds.
 
     echo "$script_name ended on... $(date +%c)"
     echo # end of output

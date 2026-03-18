@@ -1,3 +1,7 @@
+version: 5.7.3
+    - date: 2026.03.18
+    - display run time.
+
 version: 5.7.2
     - date: 2026.03.11
     - use 'type' in place of 'command'.
