@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.7.3
+set ver 5.7.4
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -293,7 +293,7 @@ function __backup_files_offsite -a bucket_name
     if test $status -eq 0
         set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
-        if set -q success_alert
+        if set -q $success_alert
             echo "$script_name - $msg" | mail -s 'Offsite Backup Info' -b "$alertEmails" root@localhost
         end
     else
