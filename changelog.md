@@ -1,6 +1,7 @@
-version: 5.7.4
+version: 5.8.0
     - date: 2026.03.24
-    - fix syntax
+    - fix update logic
+    - fix syntax checking if a variable is set.
 
 version: 5.7.3
     - date: 2026.03.18

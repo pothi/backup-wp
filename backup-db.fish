@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.7.3
+set ver 5.8.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -137,8 +137,7 @@ function __backup_update
     echo "Updating this script..."
 
     # take a backup of the current version
-    # the following line gives an error when the script is revoked from another dir
-    set current_script (pwd)/(status basename)
+    set current_script (status dirname)/(status basename)
     mkdir -p ~/backups &>/dev/null
     cp $current_script ~/backups/(status basename)-$ver
 

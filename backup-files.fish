@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.7.4
+set ver 5.8.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -168,14 +168,8 @@ function __backup_print_version
 end
 
 function __backup_update
-    # TODO: Skip update upon error or if there is no new version
-    echo "Updating this script..."
-
-    # take a backup of the current version
-    # the following line gives an error when the script is revoked from another dir
-    set current_script (pwd)/(status basename)
+    set current_script (status dirname)/(status basename)
     mkdir -p ~/backups &>/dev/null
-    cp $current_script ~/backups/(status basename)-$ver
 
     # get the remote version
     set remote_script (mktemp)
@@ -184,14 +178,24 @@ function __backup_update
     chmod +x $remote_script
 
     # display the version info
-    echo "Current Version: $ver"
-    echo "Remote Version: "($remote_script -v)
+    set -l remote_ver ($remote_script -v)
+    echo Current Version: $ver
+    echo Remote Version: $remote_ver
 
-    # final steps
-    cp $remote_script $current_script
+    if test $ver != $remote_ver
+	    printf '%-72s' 'Taking a backup of this script into ~/backups dir'
+	    cp $current_script ~/backups/(status basename)-$ver
+	    echo done.
+
+	    printf '%-72s' "Updating this script..."
+	    # final steps
+	    cp $remote_script $current_script
+	    echo done.
+    else
+	    echo Nothing to update.
+    end
 
     rm $remote_script
-    echo Done.
 end
 
 function __backup_files_bootstrap
