@@ -1,3 +1,8 @@
+version: 5.8.1
+    - date: 2026.03.25
+    - update Github raw URL
+    - simpliied logic
+
 version: 5.8.0
     - date: 2026.03.24
     - fix update logic
