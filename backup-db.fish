@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.8.1
+set ver 5.8.2
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -108,7 +108,7 @@ function backup-db -d 'Create a DB dump and optionally store it offsite.'
 
         # set -l fish_trace non_empty_value
         __backup_db_cleanup
-    end 2>&1 | tee -a ~/log/backup-$backup_type.log
+    end
 
 end # end of backup-db as a function
 
@@ -185,7 +185,8 @@ function __backup_db_bootstrap
         exit 1
     end
 
-    set -xp PATH ~/bin:~/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+    set -x PATH ~/bin ~/.local/bin /usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin
+    test -d /snap/bin; and set -a PATH /snap/bin
 
     type --query wp ; or begin; echo >&2 "wp cli is not found in $PATH. Exiting."; exit 1; end
     command -q aws ; or begin; echo >&2 "[Warn]: aws cli is not found in $PATH. Offsite backups will not be taken!"; end
@@ -273,4 +274,4 @@ function __backup_db_cleanup
     echo # end of output
 end
 
-backup-db $argv
+backup-db $argv 2>&1 | tee -a ~/log/backup-$backup_type.log

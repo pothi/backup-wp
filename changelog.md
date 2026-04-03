@@ -1,3 +1,8 @@
+version: 5.8.2
+    - date: 2026.03.31
+    - better place for logs
+    - improve PATH
+
 version: 5.8.1
     - date: 2026.03.25
     - update Github raw URL
