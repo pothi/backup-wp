@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.8.2
+set ver 6.0.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -19,6 +19,11 @@ set sites_path {$HOME}/sites
 
 # it could be public_html on some installations.
 set public_dir public
+
+# Number of backups to keep
+set NightlyBackupsToKeep 7
+set WeeklyBackupsToKeep 4
+set MonthlyBackupsToKeep 12
 
 #-------- Do NOT Edit Below This Line --------#
 
@@ -44,11 +49,6 @@ set sizeH
 set unique_backup
 set backup_symlink
 set backup_by_date
-
-# Number of backups to keep
-set NightlyBackupsToKeep 7
-set WeeklyBackupsToKeep 4
-set MonthlyBackupsToKeep 12
 
 # echo Domain: $domain
 
