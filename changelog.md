@@ -1,3 +1,9 @@
+version: 6.0.0
+    - date: 2026.04.08
+    - take backups of server config (/etc) and some user config (~/.config, ~/.aws, ~/.wp-cli)
+    - skip cron backups. Take cron backups to ~/.config/cron/ to include them in backups.
+    - move up the variables to make them easier to find and change.
+
 version: 5.8.2
     - date: 2026.03.31
     - better place for logs

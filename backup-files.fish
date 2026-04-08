@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 5.8.2
+set ver 6.0.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -19,6 +19,11 @@ set sites_path {$HOME}/sites
 
 # it could be public_html on some installations.
 set public_dir public
+
+# Number of backups to keep
+set NightlyBackupsToKeep 7
+set WeeklyBackupsToKeep 4
+set MonthlyBackupsToKeep 12
 
 #-------- Do NOT Edit Below This Line --------#
 
@@ -53,13 +58,9 @@ set excluded_items
     set -a excluded_items --exclude='*.sql'
 
 set unique_backup
+set tar_backup
 set backup_symlink
 set backup_by_date
-
-# Number of backups to keep
-set NightlyBackupsToKeep 7
-set WeeklyBackupsToKeep 4
-set MonthlyBackupsToKeep 12
 
 # echo Domain: $domain
 
@@ -182,16 +183,16 @@ function __backup_update
     echo Remote Version: $remote_ver
 
     if test $ver != $remote_ver
-	    printf '%-72s' 'Taking a backup of this script into ~/backups dir'
-	    cp $current_script ~/backups/(status basename)-$ver
-	    echo done.
+            printf '%-72s' 'Taking a backup of this script into ~/backups dir'
+            cp $current_script ~/backups/(status basename)-$ver
+            echo done.
 
-	    printf '%-72s' "Updating this script..."
-	    # final steps
-	    cp $remote_script $current_script
-	    echo done.
+            printf '%-72s' "Updating this script..."
+            # final steps
+            cp $remote_script $current_script
+            echo done.
     else
-	    echo Nothing to update.
+            echo Nothing to update.
     end
 
     rm $remote_script
@@ -206,6 +207,7 @@ function __backup_files_bootstrap
     # Define paths
 
     set unique_backup $dir_nightly/$domain$prefix-$timestamp.$ext
+    set tar_backup $dir_nightly/$domain$prefix-$timestamp.tar
     set backup_symlink $dir_nightly/$domain$prefix-latest.$ext
     set backup_by_date $domain$prefix-$fulldate.$ext
 
@@ -263,15 +265,43 @@ function __backup_tmp_db_dump
 end
 
 function __backup_files_local
-    crontab -l > $sites_path/$domain/cron-latest
-
     # take actual files backup
     # 2>/dev/null to suppress any warnings / errors
     if test -n "$passphrase"
         set unique_backup "$unique_backup".gpg
-        tar hcz $excluded_items -C $sites_path $domain | gpg --symmetric --passphrase "$passphrase" --batch -o "$unique_backup"
+        echo Please ignore any permission errors...
+        tar hc $excluded_items \
+            -C $sites_path $domain \
+            -C ~/ .config --transform 's,^.config/,dot-config/,' \
+            -C ~/ .aws --transform 's,^.aws/,dot-aws/,' \
+            -C ~/ .wp-cli --transform 's,^.wp-cli/,dot-wp-cli/,' --exclude 'cache' \
+            -C /etc mysql \
+            | gpg --symmetric --passphrase "$passphrase" --batch -o "$unique_backup"
     else
-        tar hczf $unique_backup $excluded_items -C $sites_path $domain
+        echo Creating the archive of the domain...
+        tar hcf $tar_backup $excluded_items -C $sites_path $domain
+
+        echo -e "\tAdding user config files..."
+        test -d ~/.config; and tar rf $tar_backup -C ~/ .config --transform 's,^.config/,dot-config/,'
+        test -d ~/.aws;    and tar rf $tar_backup -C ~/ .aws --transform 's,^.aws/,dot-aws/,'
+        test -d ~/.wp-cli; and tar rf $tar_backup -C ~/ .wp-cli --transform 's,^.wp-cli/,dot-wp-cli/,' --exclude 'cache'
+
+        echo -e "\tAdding server config files..."
+        tar rf $tar_backup -C / etc --ignore-failed-read --warning=no-failed-read
+        # echo Adding MySQL config to the archive...
+        # test -d /etc/mysql; and tar rf $tar_backup -C /etc mysql --ignore-failed-read --warning=no-failed-read
+
+        # echo Adding web server config to the archive...
+        # test -d /etc/nginx; and tar rf $tar_backup -C /etc nginx
+        # test -d /etc/caddy; and tar rf $tar_backup -C /etc caddy
+
+        # compress the archive
+        if test -f $tar_backup
+            echo Compressing the archive...
+            gzip $tar_backup
+        else
+            echo Tar backup is not found.
+        end
     end
     if test $status -eq 0
         echo Local backup is successful.
@@ -313,7 +343,7 @@ function __backup_files_cleanup
 
     if test -n "$offsite_only"
         rm $unique_backup
-        echo Local backup removed.
+        echo Local backup is removed.
     else
         # Weekly backup - Mondays
         if test 1 -eq (date +%u)
@@ -334,7 +364,8 @@ function __backup_files_cleanup
 
         # Display some info about the backup.
         echo Backup Folder: $dir_nightly
-        echo Latest backup: $unique_backup
+        echo Latest Backup: $unique_backup
+        echo
     end
 
     echo "Backup size:   $sizeH"
@@ -344,6 +375,7 @@ function __backup_files_cleanup
     set runtime_minutes (math -s0 $runtime / 60)
     set runtime_seconds (math $runtime % 60)
     echo Execution time: $runtime_minutes minutes $runtime_seconds seconds.
+    echo
 
     echo "$script_name ended on... "(date +%c)
     echo # end of output
