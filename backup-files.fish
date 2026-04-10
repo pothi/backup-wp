@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.0.0
+set ver 6.1.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -131,7 +131,6 @@ function backup-files -d 'Backup all files and optionally store it offsite.'
 
         __backup_files_local
 
-
         if set -q _flag_bucket
             __backup_files_offsite $_flag_bucket
         end
@@ -212,7 +211,6 @@ function __backup_files_bootstrap
     set backup_by_date $domain$prefix-$fulldate.$ext
 
     set wp_root $sites_path/$domain/$public_dir
-    set db_dump $sites_path/$domain/db
     # [ -d "$wp_root" ] || { echo >&2 "WordPress is not found at ${wp_root}"; exit 1; }
 
     ### Some standard checks ###
@@ -232,7 +230,9 @@ function __backup_files_bootstrap
 
     ### Actual Script Starts here...
     echo # Beginning of output
-    echo "$script_name started on... "(date +%c)
+    # echo "$script_name started on... "(date +%c)
+    echo "Backup started on $(date +%c)"
+    echo
     set time_start (date +%s)
 
     ##############################    Files backup specific code       ###########################
@@ -254,13 +254,17 @@ function __backup_files_bootstrap
 end
 
 function __backup_tmp_db_dump
-    if ! wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table "$db_dump" >/dev/null
+    set db_dump (mktemp)
+    wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table "$db_dump" >/dev/null
+    if test $status -ne 0
         set msg "$script_name - [Error] Something went wrong while taking DB dump!"
         printf "\n%s\n\n" "$msg"
         echo "$msg" | mail -s 'DB Dump Failure' -b "$alertEmails" root@localhost
         # remove the empty backup file
         [ -f "$db_dump" ] && rm "$db_dump"
         exit 1
+    else
+        echo Database dump is taken.
     end
 end
 
@@ -272,28 +276,29 @@ function __backup_files_local
         echo Please ignore any permission errors...
         tar hc $excluded_items \
             -C $sites_path $domain \
-            -C ~/ .config --transform 's,^.config/,dot-config/,' \
-            -C ~/ .aws --transform 's,^.aws/,dot-aws/,' \
-            -C ~/ .wp-cli --transform 's,^.wp-cli/,dot-wp-cli/,' --exclude 'cache' \
-            -C /etc mysql \
+            -C ~/ .config --transform "s,^.config/,user-data/dot-config/," \
+            -C ~/ .aws --transform "s,^.aws/,user-data/dot-aws/," \
+            -C ~/ .wp-cli --transform "s,^.wp-cli/,user-data/dot-wp-cli/," --exclude 'cache' \
+            -C / etc \
             | gpg --symmetric --passphrase "$passphrase" --batch -o "$unique_backup"
     else
-        echo Creating the archive of the domain...
+        echo Creating the archive of the domain files...
         tar hcf $tar_backup $excluded_items -C $sites_path $domain
 
+        if test -n "$db_dump"
+            mv $db_dump $sites_path/$domain/db.sql
+            echo -e "\tAdding database backup..."
+            tar rf $tar_backup -C $sites_path $domain/db.sql
+            rm $sites_path/$domain/db.sql
+        end
+
         echo -e "\tAdding user config files..."
-        test -d ~/.config; and tar rf $tar_backup -C ~/ .config --transform 's,^.config/,dot-config/,'
-        test -d ~/.aws;    and tar rf $tar_backup -C ~/ .aws --transform 's,^.aws/,dot-aws/,'
-        test -d ~/.wp-cli; and tar rf $tar_backup -C ~/ .wp-cli --transform 's,^.wp-cli/,dot-wp-cli/,' --exclude 'cache'
+        test -d ~/.config; and tar rf $tar_backup -C ~/ .config --transform "s,^.config/,$domain/user-data/dot-config/,"
+        test -d ~/.aws;    and tar rf $tar_backup -C ~/ .aws --transform "s,^.aws/,$domain/user-data/dot-aws/,"
+        test -d ~/.wp-cli; and tar rf $tar_backup -C ~/ .wp-cli --transform "s,^.wp-cli/,$domain/user-data/dot-wp-cli/," --exclude 'cache'
 
         echo -e "\tAdding server config files..."
-        tar rf $tar_backup -C / etc --ignore-failed-read --warning=no-failed-read
-        # echo Adding MySQL config to the archive...
-        # test -d /etc/mysql; and tar rf $tar_backup -C /etc mysql --ignore-failed-read --warning=no-failed-read
-
-        # echo Adding web server config to the archive...
-        # test -d /etc/nginx; and tar rf $tar_backup -C /etc nginx
-        # test -d /etc/caddy; and tar rf $tar_backup -C /etc caddy
+        tar rf $tar_backup -C / etc --transform "s:^:$domain/server-data/:" --ignore-failed-read --warning=no-failed-read
 
         # compress the archive
         if test -f $tar_backup
@@ -305,6 +310,7 @@ function __backup_files_local
     end
     if test $status -eq 0
         echo Local backup is successful.
+        echo
     else
         set msg "$script_name - [Error] Something went wrong while taking local backup!"
         printf "\n%s\n\n" "$msg"
@@ -337,9 +343,10 @@ function __backup_files_offsite -a bucket_name
     end
 end
 
+#: Cleanup {{{
 function __backup_files_cleanup
-    # remove the empty backup file, if exists
-    [ -f "$db_dump" ] && rm "$db_dump"
+    # remove the backup file, if exists
+    test -f "$db_dump"; and rm "$db_dump"
 
     if test -n "$offsite_only"
         rm $unique_backup
@@ -377,8 +384,11 @@ function __backup_files_cleanup
     echo Execution time: $runtime_minutes minutes $runtime_seconds seconds.
     echo
 
-    echo "$script_name ended on... "(date +%c)
-    echo # end of output
+    # echo "$script_name ended on... "(date +%c)
+    # echo # end of output
 end
+#: }}}
 
 backup-files $argv 2>&1 | tee -a ~/log/backup-$backup_type.log
+
+# vim:fileencoding=utf-8:foldmethod=marker

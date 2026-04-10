@@ -1,3 +1,9 @@
+version: 6.1.0
+    - date: 2026.04.10
+    - keep server/user config on their own directory insider the domain data.
+    - change the name of the database backup from db to db.sql.
+    - improve formatting.
+
 version: 6.0.0
     - date: 2026.04.08
     - take backups of server config (/etc) and some user config (~/.config, ~/.aws, ~/.wp-cli)

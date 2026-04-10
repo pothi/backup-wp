@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.0.0
+set ver 6.1.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -194,7 +194,9 @@ function __backup_db_bootstrap
 
     ### Actual Script Starts here...
     echo # Beginning of output
-    echo "$script_name started on... $(date +%c)"
+    # echo "$script_name started on... $(date +%c)"
+    echo "Backup started on $(date +%c)"
+    echo
     set time_start (date +%s)
 
 end
@@ -211,6 +213,7 @@ function __backup_db_local
     end
     if test $status -eq 0
         echo Local backup is successful.
+        echo
     else
         set msg "$script_name - [Error] Something went wrong while taking local backup!"
         printf "\n%s\n\n" "$msg"
@@ -262,6 +265,7 @@ function __backup_db_cleanup
     # Display some info about the backup.
     echo Backup Folder: $dir_nightly
     echo Latest backup: $unique_backup
+    echo
     echo "Backup size:   $sizeH"
 
     set time_end (date +%s)
@@ -269,9 +273,10 @@ function __backup_db_cleanup
     set runtime_minutes (math -s0 $runtime / 60)
     set runtime_seconds (math $runtime % 60)
     echo Execution time: $runtime_minutes minutes $runtime_seconds seconds.
+    echo
 
-    echo "$script_name ended on... $(date +%c)"
-    echo # end of output
+    # echo "$script_name ended on... $(date +%c)"
+    # echo # end of output
 end
 
 backup-db $argv 2>&1 | tee -a ~/log/backup-$backup_type.log
