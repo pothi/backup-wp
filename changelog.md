@@ -1,3 +1,8 @@
+version: 6.1.1
+    - date: 2026.04.16
+    - improve variable names
+    - improve output info (log).
+
 version: 6.1.0
     - date: 2026.04.10
     - keep server/user config on their own directory insider the domain data.

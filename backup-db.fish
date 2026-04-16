@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.1.0
+set ver 6.1.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -133,33 +133,37 @@ function __backup_print_version
 end
 
 function __backup_update
-    set current_script (status filename)
-    mkdir -p ~/backups &>/dev/null
+    # 'status filename' - prints the script name including the path to it.
+    set -l local_script (status filename)
+    test -d ~/backups; or mkdir -p ~/backups
+    # echo Current Script: $local_script
+    # echo Script Name: $script_name
 
-    # get the remote version
-    set remote_script (mktemp)
-    # echo "Temp Remote Script: $remote_script"
-    curl -sSL -o $remote_script https://raw.githubusercontent.com/pothi/backup-wp/refs/heads/main/$script_name
+    # get the remote version & keep it in a temporary file
+    set -l upstream_script (mktemp)
+    # echo "Temp Remote Script: $upstream_script"
+    curl -sSL -o $upstream_script https://raw.githubusercontent.com/pothi/backup-wp/refs/heads/main/$script_name
 
     # display the version info
-    set -l remote_ver (fish $remote_script -v)
-    echo Current Version: $ver
-    echo Remote Version: $remote_ver
+    set -l upstream_version (fish $upstream_script -v)
+    echo Local Version: $ver
 
-    if test $ver != $remote_ver
+    if test $ver != $upstream_version
+        echo Upstream Version: $upstream_version
 	    printf '%-72s' 'Taking a backup of this script into ~/backups dir'
-	    cp $current_script ~/backups/(status basename)-$ver
+	    cp $local_script ~/backups/(status basename)-$ver
 	    echo done.
 
-	    printf '%-72s' "Updating this script..."
+	    printf '%-72s' "Updating..."
 	    # final steps
-	    cp $remote_script $current_script
+	    cp $upstream_script $local_script
 	    echo done.
     else
 	    echo Nothing to update.
     end
 
-    rm $remote_script
+    # remove the temporary file/script
+    rm $upstream_script
 end
 
 function __backup_db_bootstrap
@@ -249,12 +253,14 @@ function __backup_db_cleanup
     if test 1 -eq "$(date +%u)"
         cp $unique_backup $dir_weekly/$backup_by_date
         echo Weekly backup is taken.
+        echo
     end
 
     # Monthly backup - 1st of each month
     if test 1 -eq "$(date +%e)"
         cp $unique_backup $dir_monthly/$backup_by_date
         echo Monthly backup is taken.
+        echo
     end
 
     # Auto delete backups

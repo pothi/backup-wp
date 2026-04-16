@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.1.0
+set ver 6.1.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -168,33 +168,37 @@ function __backup_print_version
 end
 
 function __backup_update
-    set current_script (status filename)
-    mkdir -p ~/backups &>/dev/null
+    # 'status filename' - prints the script name including the path to it.
+    set -l local_script (status filename)
+    test -d ~/backups; or mkdir -p ~/backups
+    # echo Current Script: $local_script
+    # echo Script Name: $script_name
 
-    # get the remote version
-    set remote_script (mktemp)
-    # echo "Temp Remote Script: $remote_script"
-    curl -sSL -o $remote_script https://raw.githubusercontent.com/pothi/backup-wp/refs/heads/main/$script_name
+    # get the remote version & keep it in a temporary file
+    set -l upstream_script (mktemp)
+    # echo "Temp Remote Script: $upstream_script"
+    curl -sSL -o $upstream_script https://raw.githubusercontent.com/pothi/backup-wp/refs/heads/main/$script_name
 
     # display the version info
-    set -l remote_ver (fish $remote_script -v)
-    echo Current Version: $ver
-    echo Remote Version: $remote_ver
+    set -l upstream_version (fish $upstream_script -v)
+    echo Local Version: $ver
 
-    if test $ver != $remote_ver
-            printf '%-72s' 'Taking a backup of this script into ~/backups dir'
-            cp $current_script ~/backups/(status basename)-$ver
-            echo done.
+    if test $ver != $upstream_version
+        echo Upstream Version: $upstream_version
+	    printf '%-66s' 'Taking a backup of this script into ~/backups dir'
+	    cp $local_script ~/backups/(status basename)-$ver
+	    echo done.
 
-            printf '%-72s' "Updating this script..."
-            # final steps
-            cp $remote_script $current_script
-            echo done.
+	    printf '%-66s' "Updating..."
+	    # final steps
+	    cp $upstream_script $local_script
+	    echo done.
     else
-            echo Nothing to update.
+	    echo Nothing to update.
     end
 
-    rm $remote_script
+    # remove the temporary file/script
+    rm $upstream_script
 end
 
 function __backup_files_bootstrap
@@ -282,8 +286,9 @@ function __backup_files_local
             -C / etc \
             | gpg --symmetric --passphrase "$passphrase" --batch -o "$unique_backup"
     else
-        echo Creating the archive of the domain files...
+        printf '%-66s' "Creating the archive of files for $domain ..."
         tar hcf $tar_backup $excluded_items -C $sites_path $domain
+        echo done.
 
         if test -n "$db_dump"
             mv $db_dump $sites_path/$domain/db.sql
@@ -292,18 +297,21 @@ function __backup_files_local
             rm $sites_path/$domain/db.sql
         end
 
-        echo -e "\tAdding user config files..."
+        printf "\t%-58s" "Adding user config files..."
         test -d ~/.config; and tar rf $tar_backup -C ~/ .config --transform "s,^.config/,$domain/user-data/dot-config/,"
         test -d ~/.aws;    and tar rf $tar_backup -C ~/ .aws --transform "s,^.aws/,$domain/user-data/dot-aws/,"
         test -d ~/.wp-cli; and tar rf $tar_backup -C ~/ .wp-cli --transform "s,^.wp-cli/,$domain/user-data/dot-wp-cli/," --exclude 'cache'
+        echo done.
 
-        echo -e "\tAdding server config files..."
+        printf "\t%-58s" "Adding server config files..."
         tar rf $tar_backup -C / etc --transform "s:^:$domain/server-data/:" --ignore-failed-read --warning=no-failed-read
+        echo done.
 
         # compress the archive
         if test -f $tar_backup
-            echo Compressing the archive...
+            printf '%-66s' 'Compressing the archive...'
             gzip $tar_backup
+            echo done.
         else
             echo Tar backup is not found.
         end
@@ -356,12 +364,14 @@ function __backup_files_cleanup
         if test 1 -eq (date +%u)
             cp $unique_backup $dir_weekly/$backup_by_date
             echo Weekly backup is taken.
+            echo
         end
 
         # Monthly backup - 1st of each month
         if test 1 -eq "$(date +%e)"
             cp $unique_backup $dir_monthly/$backup_by_date
             echo Monthly backup is taken.
+            echo
         end
 
         # Auto delete backups
