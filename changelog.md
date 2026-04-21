@@ -1,3 +1,8 @@
+version: 6.2.0
+    - date: 2026.04.21
+    - automatic removal of temporary files created using mktemp
+    - simplify log file name
+
 version: 6.1.1
     - date: 2026.04.16
     - improve variable names

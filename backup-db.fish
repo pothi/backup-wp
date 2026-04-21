@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.1.1
+set ver 6.2.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -140,7 +140,8 @@ function __backup_update
     # echo Script Name: $script_name
 
     # get the remote version & keep it in a temporary file
-    set -l upstream_script (mktemp)
+    set --global upstream_script (mktemp)
+    trap 'rm "$upstream_script"' EXIT INT TERM
     # echo "Temp Remote Script: $upstream_script"
     curl -sSL -o $upstream_script https://raw.githubusercontent.com/pothi/backup-wp/refs/heads/main/$script_name
 
@@ -161,9 +162,6 @@ function __backup_update
     else
 	    echo Nothing to update.
     end
-
-    # remove the temporary file/script
-    rm $upstream_script
 end
 
 function __backup_db_bootstrap
@@ -285,4 +283,6 @@ function __backup_db_cleanup
     # echo # end of output
 end
 
-backup-db $argv 2>&1 | tee -a ~/log/backup-$backup_type.log
+backup-db $argv 2>&1 | tee -a ~/log/(status basename | awk -F. '{print $1}').log
+
+# vim:fileencoding=utf-8:foldmethod=marker

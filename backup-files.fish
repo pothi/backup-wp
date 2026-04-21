@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.1.1
+set ver 6.2.0
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -175,7 +175,8 @@ function __backup_update
     # echo Script Name: $script_name
 
     # get the remote version & keep it in a temporary file
-    set -l upstream_script (mktemp)
+    set -g upstream_script (mktemp)
+    trap 'rm "$upstream_script"' EXIT INT TERM
     # echo "Temp Remote Script: $upstream_script"
     curl -sSL -o $upstream_script https://raw.githubusercontent.com/pothi/backup-wp/refs/heads/main/$script_name
 
@@ -196,9 +197,6 @@ function __backup_update
     else
 	    echo Nothing to update.
     end
-
-    # remove the temporary file/script
-    rm $upstream_script
 end
 
 function __backup_files_bootstrap
@@ -259,13 +257,12 @@ end
 
 function __backup_tmp_db_dump
     set db_dump (mktemp)
+    trap 'test -f "$db_dump"; and rm "$db_dump"' EXIT INT TERM
     wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table "$db_dump" >/dev/null
     if test $status -ne 0
         set msg "$script_name - [Error] Something went wrong while taking DB dump!"
         printf "\n%s\n\n" "$msg"
         echo "$msg" | mail -s 'DB Dump Failure' -b "$alertEmails" root@localhost
-        # remove the empty backup file
-        [ -f "$db_dump" ] && rm "$db_dump"
         exit 1
     else
         echo Database dump is taken.
@@ -290,6 +287,7 @@ function __backup_files_local
         tar hcf $tar_backup $excluded_items -C $sites_path $domain
         echo done.
 
+        # TODO: directly add the temp file as db.sql into the archive
         if test -n "$db_dump"
             mv $db_dump $sites_path/$domain/db.sql
             echo -e "\tAdding database backup..."
@@ -353,9 +351,6 @@ end
 
 #: Cleanup {{{
 function __backup_files_cleanup
-    # remove the backup file, if exists
-    test -f "$db_dump"; and rm "$db_dump"
-
     if test -n "$offsite_only"
         rm $unique_backup
         echo Local backup is removed.
@@ -399,6 +394,6 @@ function __backup_files_cleanup
 end
 #: }}}
 
-backup-files $argv 2>&1 | tee -a ~/log/backup-$backup_type.log
+backup-files $argv 2>&1 | tee -a ~/log/(status basename | awk -F. '{print $1}').log
 
 # vim:fileencoding=utf-8:foldmethod=marker
