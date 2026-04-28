@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.2.0
+set ver 6.2.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -207,6 +207,7 @@ function __backup_db_local
     # take actual DB backup
     # 2>/dev/null to suppress any warnings / errors
     # wp --path="$wp_root" transient delete --all
+    echo Please hold on while backup is taken.
     if test -n "$passphrase"
         set unique_backup "$unique_backup".gpg
         wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table - | gzip | gpg --symmetric --passphrase "$passphrase" --batch -o "$unique_backup"

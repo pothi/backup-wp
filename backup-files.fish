@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.2.0
+set ver 6.2.1
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -256,6 +256,7 @@ function __backup_files_bootstrap
 end
 
 function __backup_tmp_db_dump
+    printf '%-66s' "Creating a temporary DB dump..."
     set db_dump (mktemp)
     trap 'test -f "$db_dump"; and rm "$db_dump"' EXIT INT TERM
     wp --path="$wp_root" db export --no-tablespaces=true --add-drop-table "$db_dump" >/dev/null
@@ -265,7 +266,7 @@ function __backup_tmp_db_dump
         echo "$msg" | mail -s 'DB Dump Failure' -b "$alertEmails" root@localhost
         exit 1
     else
-        echo Database dump is taken.
+        echo done.
     end
 end
 
