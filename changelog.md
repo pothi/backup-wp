@@ -1,3 +1,7 @@
+version: 6.2.2
+    - date: 2026.05.01
+    - better output / log info.
+
 version: 6.2.1
     - date: 2026.04.28
     - better output / log info.

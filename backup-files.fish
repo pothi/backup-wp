@@ -5,7 +5,7 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.2.1
+set ver 6.2.2
 
 ### Variables - Please do not add trailing slash in the PATHs
 
@@ -336,6 +336,7 @@ end
 
 function __backup_files_offsite -a bucket_name
     # send the backup offsite
+    echo Sending the backup to offsite. It may take a while...
     aws s3 cp $unique_backup s3://$bucket_name/$domain/$backup_type/$backup_by_date --only-show-errors
     if test $status -eq 0
         set msg "Offsite backup is successful."
