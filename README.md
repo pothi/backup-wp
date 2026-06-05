@@ -1,29 +1,48 @@
 Backup Wordpress
 ================
 
-This is rewritten version of [Backup WordPress repo](https://github.com/pothi/backup-wordpress), in fish shell.
+This is refactored version of [Backup WordPress repo](https://github.com/pothi/backup-wordpress), in fish shell.
 
 ## Features
 
 - No plugin to install. So, no plugin conflicts!
 - Single script to take backups of multiple sites.
-- Separate script to take (nightly) files backup without uploads directory!
+- Ability to take files backup without uploads directory!
 - Local and offline backups are supported.
 - Automatic deletion of local backups.
 - Support for sub-directory installation of WordPress!
 - Support for simple encryption using GnuPG
 - Alert via email when the offsite backup fails (and succeeds)
++ Internal email alert.
++ External email alert via AWS SES.
++ Ability to auto-update scripts.
 
 ## Requirements in the server
 
 - [fish shell](https://fishshell.com/)
 - [wp-cli](https://wp-cli.org/)
 - [aws-cli](https://aws.amazon.com/cli/)
-- SSH access
-- mysqldump
-- tar
-- enough disk space to hold local backups
 - [gpg](https://www.gnupg.org/index.html) for encrypted backups (optional, but helps to comply with GDPR).
+- enough disk space to hold local backups
+
+## Assumptions
+
++ WordPress sites:
+```
+~/sites/example.com/public
+~/sites/example.net/public
+```
++ Each site contains:
+```
+~/sites/example.com/wp-config.php
+~/sites/example.net/wp-config.php
+```
++ Backups stored in:
+```
+~/backups/nightly/
+~/backups/weekly/
+~/backups/monthly/
+```
 
 ## What does each backup script do?
 
@@ -33,7 +52,7 @@ This is rewritten version of [Backup WordPress repo](https://github.com/pothi/ba
 ## Where are the backups stored?
 
 - local backups are stored in the directory named `~/backups/`. If it doesn't exist, the script/s would attempt to create it before execution.
-- offline backups can be stored in AWS (for now). Support for other storage engines (especially for GCP) is coming soon!
+- offline backups can be stored in AWS.
 
 ## Usage
 
@@ -65,7 +84,7 @@ Yes, of course. But, for a small fee of USD 5 per server per site. [Reach out to
 
 ### I have a unique situation. Can you customize it to suit my particular environment?
 
-Possibly, yes. My hourly rate is USD 50 per hour, though.
+Possibly, yes. My hourly rate is USD 50 per hour.
 
 ### Have questions or just wanted to say hi?
 

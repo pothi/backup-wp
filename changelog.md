@@ -1,3 +1,8 @@
+version: 6.2.3
+    - date: 2026.06.05
+    - better docs
+    - prepare to distinquish internal/external email alerts.
+
 version: 6.2.2
     - date: 2026.05.01
     - better output / log info.

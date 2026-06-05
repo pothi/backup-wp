@@ -1,7 +1,5 @@
 #!/usr/bin/env fish
 
-# set -l fish_trace non_empty_value
-
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
@@ -17,7 +15,7 @@ set passphrase
 # if you have a different pattern, such as ~/app/example.com, please change the following to fit the server environment!
 set sites_path {$HOME}/sites
 
-# it could be public_html on some installations.
+# possible values: public_html, public, dist, etc
 set public_dir public
 
 # Number of backups to keep
@@ -26,6 +24,8 @@ set WeeklyBackupsToKeep 4
 set MonthlyBackupsToKeep 12
 
 #-------- Do NOT Edit Below This Line --------#
+
+# set -l fish_trace non_empty_value
 
 # create necessary directories
 test -d ~/backups || mkdir -p ~/backups
@@ -263,7 +263,8 @@ function __backup_tmp_db_dump
     if test $status -ne 0
         set msg "$script_name - [Error] Something went wrong while taking DB dump!"
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'DB Dump Failure' -b "$alertEmails" root@localhost
+        echo "$msg" | mail -s 'DB Dump Failure' root@localhost
+        # echo "$msg" | mail -s 'DB Dump Failure' -b "$alertEmails"
         exit 1
     else
         echo done.
@@ -321,7 +322,8 @@ function __backup_files_local
     else
         set msg "$script_name - [Error] Something went wrong while taking local backup!"
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'Backup Failure' -b "$alertEmails" root@localhost
+        echo "$msg" | mail -s 'Backup Failure' root@localhost
+        # echo "$msg" | mail -s 'Backup Failure' -b "$alertEmails"
         [ -f "$unique_backup" ] && rm -f "$unique_backup"
         exit 1
     end
@@ -342,12 +344,14 @@ function __backup_files_offsite -a bucket_name
         set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
         if set -q $success_alert
-            echo "$script_name - $msg" | mail -s 'Offsite Backup Info' -b "$alertEmails" root@localhost
+            echo "$script_name - $msg" | mail -s 'Offsite Backup Info' root@localhost
+            # echo "$script_name - $msg" | mail -s 'Offsite Backup Info' -b "$alertEmails"
         end
     else
         set msg "$script_name - [Error] Something went wrong while taking offsite backup."
         printf "\n%s\n\n" "$msg"
-        echo "$msg" | mail -s 'Offsite Backup Info' -b "$alertEmails" root@localhost
+        echo "$msg" | mail -s 'Offsite Backup Info' root@localhost
+        # echo "$msg" | mail -s 'Offsite Backup Info' -b "$alertEmails"
     end
 end
 
