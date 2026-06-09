@@ -1,3 +1,7 @@
+version: 6.2.4
+    - date: 2026.06.09
+    - remove prefix from backup name.
+
 version: 6.2.3
     - date: 2026.06.05
     - better docs

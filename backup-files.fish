@@ -3,16 +3,15 @@
 # requirements
 # ~/log, ~/backups, ~/path/to/example.com/public
 
-set ver 6.2.2
+set ver 6.2.4
 
 ### Variables - Please do not add trailing slash in the PATHs
 
 # a passphrase for encryption, in order to being able to use almost any special characters use ""
-# it's best to configure it in ~/.envrc file
 set passphrase
 
-# the script assumes your sites are stored like ~/sites/example.com, ~/sites/example.net, ~/sites/example.org and so on.
-# if you have a different pattern, such as ~/app/example.com, please change the following to fit the server environment!
+# assuming the sites are kept like ~/sites/example.com, ~/sites/example.net, ~/sites/example.org and so on.
+# if you use a different pattern, such as ~/app/example.com, please change the following to fit yours.
 set sites_path {$HOME}/sites
 
 # possible values: public_html, public, dist, etc
@@ -23,18 +22,15 @@ set NightlyBackupsToKeep 7
 set WeeklyBackupsToKeep 4
 set MonthlyBackupsToKeep 12
 
-#-------- Do NOT Edit Below This Line --------#
+#-------- You may NOT want to edit below this line --------#
 
-# set -l fish_trace non_empty_value
+set backup_type files
 
 # create necessary directories
 test -d ~/backups || mkdir -p ~/backups
 test -d ~/log || mkdir -p ~/log
 
-set backup_type files
-
 set ext tar.gz
-set prefix -$backup_type
 
 set backups_folder ~/backups/$backup_type
 
@@ -207,10 +203,10 @@ function __backup_files_bootstrap
 
     # Define paths
 
-    set unique_backup $dir_nightly/$domain$prefix-$timestamp.$ext
-    set tar_backup $dir_nightly/$domain$prefix-$timestamp.tar
-    set backup_symlink $dir_nightly/$domain$prefix-latest.$ext
-    set backup_by_date $domain$prefix-$fulldate.$ext
+    set unique_backup $dir_nightly/$domain-$timestamp.$ext
+    set tar_backup $dir_nightly/$domain-$timestamp.tar
+    set backup_symlink $dir_nightly/$domain-latest.$ext
+    set backup_by_date $domain-$fulldate.$ext
 
     set wp_root $sites_path/$domain/$public_dir
     # [ -d "$wp_root" ] || { echo >&2 "WordPress is not found at ${wp_root}"; exit 1; }
@@ -376,9 +372,9 @@ function __backup_files_cleanup
         end
 
         # Auto delete backups
-        find -L $dir_nightly/ -type f -iname "$domain$prefix-*" -mtime +$NightlyBackupsToKeep               -exec rm {} \;
-        find -L $dir_weekly/  -type f -iname "$domain$prefix-*" -mtime +(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
-        find -L $dir_monthly/ -type f -iname "$domain$prefix-*" -mtime +(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
+        find -L $dir_nightly/ -type f -iname "$domain-*" -mtime +$NightlyBackupsToKeep               -exec rm {} \;
+        find -L $dir_weekly/  -type f -iname "$domain-*" -mtime +(math $WeeklyBackupsToKeep x 7)    -exec rm {} \;
+        find -L $dir_monthly/ -type f -iname "$domain-*" -mtime +(math $MonthlyBackupsToKeep x 31)  -exec rm {} \;
 
         # Display some info about the backup.
         echo Backup Folder: $dir_nightly
