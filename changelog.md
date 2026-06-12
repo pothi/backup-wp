@@ -1,3 +1,9 @@
+version: 6.3.0
+    - date: 2026.06.12
+    - add support for AWS profile.
+    - simplify code structure.
+    - improve output.
+
 version: 6.2.4
     - date: 2026.06.09
     - remove prefix from backup name.

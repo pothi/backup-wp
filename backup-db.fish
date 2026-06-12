@@ -1,17 +1,14 @@
 #!/usr/bin/env fish
 
-# requirements
-# ~/log, ~/backups, ~/path_to/example.com/public
+set ver 6.3.0
 
-set ver 6.2.4
+### Variables ###
 
-### Variables - Please do not add trailing slash in the PATHs
-
-# a passphrase for encryption, in order to being able to use almost any special characters use ""
+# for encryption (optional, but recommended)
 set passphrase
 
 # assuming the sites are kept like ~/sites/example.com, ~/sites/example.net, ~/sites/example.org and so on.
-# if you use a different pattern, such as ~/app/example.com, please change the following to fit yours.
+# if you have a different pattern, such as ~/app/example.com, please change here.
 set sites_path {$HOME}/sites
 
 # possible values: public_html, public, dist, etc
@@ -26,13 +23,21 @@ set MonthlyBackupsToKeep 12
 
 set backup_type db
 
+set backups_folder $HOME/backups/$backup_type
+set dir_nightly $backups_folder/nightly
+set dir_weekly $backups_folder/weekly
+set dir_monthly $backups_folder/monthly
+
 # create necessary directories
-test -d ~/backups || mkdir -p ~/backups
-test -d ~/log || mkdir -p ~/log
+test -d ~/backups      || mkdir -p ~/backups
+test -d ~/log          || mkdir -p ~/log
+test -d "$dir_nightly" || mkdir -p "$dir_nightly"
+test -d "$dir_weekly"  || mkdir -p "$dir_weekly"
+test -d "$dir_monthly" || mkdir -p "$dir_monthly"
 
 set ext sql.gz
 
-set backups_folder $HOME/backups/$backup_type
+set aws_profile default
 
 # Variables defined later in the script
 set script_name (status basename)
@@ -40,17 +45,10 @@ set fulldate (date +%F)
 set timestamp (date +%F_%H-%M-%S)
 set bucket_name
 set domain
-set sizeH
 
 set unique_backup
 set backup_symlink
 set backup_by_date
-
-# echo Domain: $domain
-
-set dir_nightly $backups_folder/nightly
-set dir_weekly $backups_folder/weekly
-set dir_monthly $backups_folder/monthly
 
 set alertEmails
 set wp_root
@@ -59,7 +57,7 @@ set time_start
 set time_end
 
 function backup-db -d 'Create a DB dump and optionally store it offsite.'
-    argparse --name=backup-db 'h/help' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' 'v/version' 'u/update' -- $argv
+    argparse --name=backup-db 'h/help' 'p/profile=' 'b/bucket=' 'x/exclude_uploads' 'o/only_offsite' 'e/email=' 's/success' 'v/version' 'u/update' -- $argv
     or return
 
     if set -q _flag_help
@@ -93,6 +91,10 @@ function backup-db -d 'Create a DB dump and optionally store it offsite.'
         set success_alert yes
     end
 
+    if set -q _flag_profile
+        set aws_profile $_flag_profile
+    end
+
     # actual script begins here
     begin
         __backup_db_bootstrap
@@ -111,8 +113,9 @@ end # end of backup-db as a function
 function __backup_db_print_help
     printf '%s\n\n' "Take a database backup"
 
-    printf 'Usage: %s [-b <bucket_name>] [-e <email-address>] [-s] [-p <WP path>] [-v] [-h] example.com\n\n' "$script_name"
+    printf 'Usage: %s [-p <aws_profile>] [-b <bucket_name>] [-e <email-address>] [-s] [-p <WP path>] [-v] [-h] example.com\n\n' "$script_name"
 
+    printf '\t%s\t%s\n' "-p, --profile" "AWS profile (default: default/none)"
     printf '\t%s\t%s\n' "-b, --bucket" "Name of the bucket for offsite backup (default: none)"
     printf '\t%s\t%s\n' "-e, --email" "Email/s to send success/failure alerts in addition to root"
     printf '\t%s\t%s\n' "-s, --success" "Alert on successful (offsite) backup (default: alert on failures)"
@@ -131,7 +134,6 @@ end
 function __backup_update
     # 'status filename' - prints the script name including the path to it.
     set -l local_script (status filename)
-    test -d ~/backups; or mkdir -p ~/backups
     # echo Current Script: $local_script
     # echo Script Name: $script_name
 
@@ -161,13 +163,7 @@ function __backup_update
 end
 
 function __backup_db_bootstrap
-    test -d ~/tmp || mkdir -p ~/tmp
-    test -d "$dir_nightly" || mkdir -p "$dir_nightly"
-    test -d "$dir_weekly" || mkdir -p "$dir_weekly"
-    test -d "$dir_monthly" || mkdir -p "$dir_monthly"
-
     # Define paths
-
     set unique_backup $dir_nightly/$domain-$timestamp.$ext
     set backup_symlink $dir_nightly/$domain-latest.$ext
     set backup_by_date $domain-$fulldate.$ext
@@ -222,8 +218,6 @@ function __backup_db_local
         exit 1
     end
 
-    set sizeH $(du -h $unique_backup | awk '{print $1}')
-
     [ -L "$backup_symlink" ] && rm "$backup_symlink"
     ln -s "$unique_backup" "$backup_symlink"
 end
@@ -231,7 +225,7 @@ end
 function __backup_db_offsite -a bucket_name
     # send the backup offsite
     echo Sending the backup to offsite. It may take a while...
-    aws s3 cp $unique_backup s3://$bucket_name/$domain/$backup_type/$backup_by_date --only-show-errors
+    aws --profile $aws_profile s3 cp $unique_backup s3://$bucket_name/$domain/$backup_type/$backup_by_date --only-show-errors
     if test $status -eq 0
         set msg "Offsite backup is successful."
         printf "\n%s\n\n" "$msg"
@@ -271,6 +265,8 @@ function __backup_db_cleanup
     echo Backup Folder: $dir_nightly
     echo Latest backup: $unique_backup
     echo
+
+    set -l sizeH $(du -h $unique_backup | awk '{print $1}')
     echo "Backup size:   $sizeH"
 
     set time_end (date +%s)
@@ -286,4 +282,4 @@ end
 
 backup-db $argv 2>&1 | tee -a ~/log/(status basename | awk -F. '{print $1}').log
 
-# vim:fileencoding=utf-8:foldmethod=marker
+# vim: fileencoding=utf-8 : foldmethod=marker
