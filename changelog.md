@@ -1,3 +1,7 @@
+version: 6.3.1
+    - date: 2026.06.15
+    - remove redundant declaration.
+
 version: 6.3.0
     - date: 2026.06.12
     - add support for AWS profile.

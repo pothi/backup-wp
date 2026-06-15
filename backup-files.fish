@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 
-set ver 6.3.0
+set ver 6.3.1
 
 ### Variables ###
 
@@ -50,7 +50,6 @@ set domain
 set excluded_items
 set custom_email
 set custom_wp_path
-set public_dir public
 set excluded_items
     set -a excluded_items --exclude='*.log'
     set -a excluded_items --exclude='*.gz'
