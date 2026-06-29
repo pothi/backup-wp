@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 
-set ver 6.3.1
+set ver 6.3.2
 
 ### Variables ###
 
@@ -347,6 +347,10 @@ end
 
 #: Cleanup {{{
 function __backup_files_cleanup
+    # get size before deleting in case of offsite only backups
+    set -l sizeH (du -h $unique_backup | awk '{print $1}')
+    echo "Backup size:   $sizeH"
+
     if test -n "$offsite_only"
         rm $unique_backup
         echo Local backup is removed.
@@ -375,9 +379,6 @@ function __backup_files_cleanup
         echo Latest Backup: $unique_backup
         echo
     end
-
-    set -l sizeH (du -h $unique_backup | awk '{print $1}')
-    echo "Backup size:   $sizeH"
 
     set time_end (date +%s)
     set runtime (math $time_end - $time_start)

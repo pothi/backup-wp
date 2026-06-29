@@ -1,3 +1,7 @@
+version: 6.3.2
+    - date: 2026.06.29
+    - calculate backup size before deleting in case of offsite only backups.
+
 version: 6.3.1
     - date: 2026.06.15
     - remove redundant declaration.
